@@ -5,6 +5,7 @@ package kinsumer
 //TODO: The filename is bad
 
 import (
+	"sort"
 	"strconv"
 	"time"
 
@@ -119,6 +120,7 @@ func getClients(db dynamodbiface.DynamoDBAPI, name string, tableName string, max
 		return nil, err
 	}
 
+	sort.Sort(sortableClients(clients))
 	return clients, nil
 }
 
