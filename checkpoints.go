@@ -212,18 +212,32 @@ func (cp *checkpointer) release() error {
 	if err != nil {
 		return err
 	}
-	if _, err = cp.dynamodb.UpdateItem(&dynamodb.UpdateItemInput{
-		TableName: aws.String(cp.tableName),
-		Key: map[string]*dynamodb.AttributeValue{
-			"Shard": {S: aws.String(cp.shardID)},
-		},
-		UpdateExpression: aws.String("REMOVE OwnerID, OwnerName " +
-			"SET LastUpdate = :lastUpdate, LastUpdateRFC = :lastUpdateRFC, " +
-			"SequenceNumber = :sequenceNumber"),
-		ConditionExpression:       aws.String("OwnerID = :ownerID"),
-		ExpressionAttributeValues: attrVals,
-	}); err != nil {
-		return fmt.Errorf("error releasing checkpoint: %s", err)
+
+	// First, check if there is a checkpoint associated with this ownerID
+	checkpointResult, err := cp.dynamodb.Query(&dynamodb.QueryInput{
+		ConditionalOperator: aws.String("OwnerID = :ownerID"),
+		TableName:           aws.String(cp.tableName),
+	})
+
+	if err != nil {
+		return err
+	}
+
+	// Only attempt to release ownership if it exists
+	if *checkpointResult.Count > 0 {
+		if _, err = cp.dynamodb.UpdateItem(&dynamodb.UpdateItemInput{
+			TableName: aws.String(cp.tableName),
+			Key: map[string]*dynamodb.AttributeValue{
+				"Shard": {S: aws.String(cp.shardID)},
+			},
+			UpdateExpression: aws.String("REMOVE OwnerID, OwnerName " +
+				"SET LastUpdate = :lastUpdate, LastUpdateRFC = :lastUpdateRFC, " +
+				"SequenceNumber = :sequenceNumber"),
+			ConditionExpression:       aws.String("OwnerID = :ownerID"),
+			ExpressionAttributeValues: attrVals,
+		}); err != nil {
+			return fmt.Errorf("error releasing checkpoint: %s", err)
+		}
 	}
 
 	if cp.sequenceNumber != "" {
