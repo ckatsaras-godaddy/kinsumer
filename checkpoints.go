@@ -199,9 +199,10 @@ func (cp *checkpointer) commit() (bool, error) {
 
 	// REMOVE: JUST FOR TESTING EASILY
 	checkpointResult, err := cp.dynamodb.Query(&dynamodb.QueryInput{
-		TableName:              aws.String(cp.tableName),
-		ConsistentRead:         aws.Bool(true),
-		KeyConditionExpression: aws.String("OwnerID = :ownerID"),
+		TableName:                 aws.String(cp.tableName),
+		ConsistentRead:            aws.Bool(true),
+		KeyConditionExpression:    aws.String("OwnerID = :ownerID"),
+		ExpressionAttributeValues: attrVals,
 	})
 
 	fmt.Println(checkpointResult)
@@ -225,9 +226,10 @@ func (cp *checkpointer) release() error {
 
 	// First, check if there is a checkpoint associated with this ownerID
 	checkpointResult, err := cp.dynamodb.Query(&dynamodb.QueryInput{
-		TableName:              aws.String(cp.tableName),
-		ConsistentRead:         aws.Bool(true),
-		KeyConditionExpression: aws.String("OwnerID = :ownerID"),
+		TableName:                 aws.String(cp.tableName),
+		ConsistentRead:            aws.Bool(true),
+		KeyConditionExpression:    aws.String("OwnerID = :ownerID"),
+		ExpressionAttributeValues: attrVals,
 	})
 
 	if err != nil {
